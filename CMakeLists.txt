@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 3.29)
-project(D2RVoidDropFix VERSION 1.0.1 LANGUAGES CXX RC)
+project(D2RVoidDropFix VERSION 1.0.0 LANGUAGES CXX RC)
 
 include(FetchContent)
 
 # ------------------------------------------------------------------------------
-# 1. Check for a local copy of PluginSDK first (offline & fast)
+# 1. Check for a local copy first (fast & offline)
 # ------------------------------------------------------------------------------
 set(D2RLOADER_PLUGIN_SDK_DIR "" CACHE PATH "Optional local path to D2RLoader Plugin SDK")
 
 set(LOCAL_SDK_CANDIDATES
     "${D2RLOADER_PLUGIN_SDK_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/sdk"
     "${CMAKE_CURRENT_SOURCE_DIR}/../PluginSDK-master"
     "${CMAKE_CURRENT_SOURCE_DIR}/../PluginSDK"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../PluginSDK-master"
@@ -20,7 +21,6 @@ set(FOUND_LOCAL_SDK FALSE)
 foreach(candidate IN LISTS LOCAL_SDK_CANDIDATES)
     if(candidate AND EXISTS "${candidate}/CMakeLists.txt")
         message(STATUS "Found local D2RLoader Plugin SDK: ${candidate}")
-        # Disable building examples when including SDK as dependency
         set(D2RLPLUGIN_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         add_subdirectory("${candidate}" "${CMAKE_BINARY_DIR}/D2RLoader-PluginSDK")
         set(FOUND_LOCAL_SDK TRUE)
@@ -29,17 +29,16 @@ foreach(candidate IN LISTS LOCAL_SDK_CANDIDATES)
 endforeach()
 
 # ------------------------------------------------------------------------------
-# 2. If not found locally, automatically download via FetchContent
+# 2. If not found locally, automatically download from GitHub via FetchContent
 # ------------------------------------------------------------------------------
 if(NOT FOUND_LOCAL_SDK)
-    message(STATUS "Local PluginSDK not found. Downloading D2RLoader Plugin SDK via FetchContent...")
+    message(STATUS "Local SDK not found; downloading from https://github.com/D2RLoader/PluginSDK.git...")
     
-    # Don't build SDK example plugins during dependency build
     set(D2RLPLUGIN_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(
         D2RLoaderPluginSDK
-        GIT_REPOSITORY https://github.com/Dimentio/PluginSDK.git
+        GIT_REPOSITORY https://github.com/D2RLoader/PluginSDK.git
         GIT_TAG        master
         GIT_SHALLOW    TRUE
     )
@@ -69,7 +68,7 @@ set_target_properties(D2RVoidDropFix PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/release/d2rloader/plugins"
 )
 
-# Optional helper from PluginSDK to embed the default TOML config into the binary
+# Embed default TOML config into the DLL resource using SDK helper
 if(COMMAND d2rlplugin_embed_config)
     d2rlplugin_embed_config(
         TARGET D2RVoidDropFix
