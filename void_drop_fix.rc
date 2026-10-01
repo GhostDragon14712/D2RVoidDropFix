@@ -1,4 +1,8 @@
-#include <D2RLPlugin/resources.h>
+// D2RLoader Plugin Manifest Resource
+// Resource ID 0x03E9 (1001) = D2RL_PLUGIN_MANIFEST_RESOURCE_ID
+// Value 4L = D2RL_PLUGIN_ABI_VERSION (ABI Version 4)
 
-D2RL_RESOURCE_ABI_VERSION()
-D2RL_RESOURCE_CONFIG("void-drop-fix.toml")
+0x03E9 RCDATA
+BEGIN
+    4L
+END
