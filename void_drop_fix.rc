@@ -1,0 +1,4 @@
+#include <D2RLPlugin/resources.h>
+
+D2RL_RESOURCE_ABI_VERSION()
+D2RL_RESOURCE_CONFIG("void-drop-fix.toml")

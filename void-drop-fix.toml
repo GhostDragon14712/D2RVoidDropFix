@@ -1,0 +1,24 @@
+# ==============================================================================
+# D2R Void Drop Fix Configuration
+#
+# Credits:
+#   - Dimentio: D2RLoader & Plugin SDK
+#   - D2MOO Project: Diablo II Collision Engine Research
+# ==============================================================================
+
+[general]
+# Enable or disable the void drop protection.
+enabled = true
+
+# Output recovery notifications to the D2RLoader log file.
+log_recoveries = true
+
+# Attempt to find the nearest walkable platform or ledge before falling back.
+search_wider_radius_first = true
+
+# Radius (in tiles) to search for the nearest ledge (default: 24, max: 100).
+# Narrow Arcane Sanctuary walkways are 3-4 tiles wide.
+wider_search_radius = 24
+
+# If no ledge is found in the search radius, safely drop at the origin/killer coordinates.
+fallback_to_player = true
