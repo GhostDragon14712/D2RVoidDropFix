@@ -28,7 +28,7 @@ static constexpr D2RL::PluginInfo kPluginInfo{
     .abiVersion  = D2RL_PLUGIN_ABI_VERSION,
     .id          = "d2rl-void-drop-fix",
     .name        = "D2R Void Drop Fix",
-    .version     = "1.0.0",
+    .version     = "1.0.1",
     .author      = "D2RLoader Community",
     .description = "Prevents items and gold from being destroyed when monsters die over void/abyss tiles. (Credits: Dimentio, D2MOO)",
     .flags       = D2RL::PluginFlags::Shared | D2RL::PluginFlags::NativeHooks,
@@ -46,11 +46,12 @@ struct Config {
 };
 
 static Config g_config;
+static std::atomic<uint64_t> g_totalCallsCount{0};
 static std::atomic<uint64_t> g_recoveredDropsCount{0};
 static const D2RL::PluginContext* g_context = nullptr;
 
 // Target RVA in Diablo II: Resurrected for COLLISION_GetFreeCoordinates
-// Base address: 0x140000000 | Ghidra function: 0x140364e90
+// Base address: 0x140000000 | Function offset: 0x140364e90
 static constexpr uint64_t kCollisionGetFreeCoordsRva = 0x00364E90;
 
 // Safety check bytes required by D2RLoader to verify the binary function prologue:
@@ -101,6 +102,14 @@ static auto ToLower(std::string s) -> std::string {
         return static_cast<char>(std::tolower(c));
     });
     return s;
+}
+
+static void NotifyLog(const char* message) {
+    if (!g_context) return;
+    // Log to d2rloader.log
+    g_context->LogInfo(message);
+    // Also print to in-game console (`~`)
+    g_context->WriteConsoleMessage(message, D2RL::ConsoleMessageKind::Output);
 }
 
 static void LoadConfiguration(const D2RL::PluginContext* context) {
@@ -167,21 +176,17 @@ static int64_t __fastcall HookCOLLISION_GetFreeCoordinates(
         return 0;
     }
 
-    // Step 1: Let the vanilla engine search with its standard radius.
+    g_totalCallsCount.fetch_add(1, std::memory_order_relaxed);
+
+    // Step 1: Let the vanilla engine search with its standard radius first.
     // If the monster is on valid walkable ground, this succeeds immediately.
     int64_t resultRoom = original(
         pRoom, pTargetCoords, pOriginCoords, nMask, nField, bCheckLOS, bIncludeOrigin, nRadius, nStep
     );
 
-    // If a valid ground tile was found, or the plugin is disabled, return normal game result
+    // If valid ground was found, or the plugin is disabled, or no target buffer, return vanilla result
     if (resultRoom != 0 || !g_config.enabled || !pTargetCoords) {
         return resultRoom;
-    }
-
-    // Check if this search was for item/gold placement (collision mask 0x801 or 0x01)
-    const bool isSpawnOrWalkCheck = (nMask & 0x801) != 0 || (nMask == 1);
-    if (!isSpawnOrWalkCheck) {
-        return 0;
     }
 
     // Step 2: ATTEMPT A - Search with an expanded radius for the nearest walkable walkway/ledge
@@ -192,22 +197,22 @@ static int64_t __fastcall HookCOLLISION_GetFreeCoordinates(
         );
 
         if (resultRoom != 0) {
-            g_recoveredDropsCount.fetch_add(1, std::memory_order_relaxed);
-            if (g_config.logRecoveries && g_context != nullptr) {
-                char msg[128];
+            const auto count = g_recoveredDropsCount.fetch_add(1, std::memory_order_relaxed) + 1;
+            if (g_config.logRecoveries) {
+                char msg[256];
                 std::snprintf(msg, sizeof(msg),
-                    "[VoidDropFix] Recovered drop to nearest ledge at (%d, %d). Total recovered: %llu",
-                    pTargetCoords[0], pTargetCoords[1],
-                    static_cast<unsigned long long>(g_recoveredDropsCount.load()));
-                g_context->LogInfo(msg);
+                    "[VoidDropFix] Loot recovered to nearest ledge at (%d, %d) [mask=0x%X, radius=%d]. Total recovered: %llu",
+                    pTargetCoords[0], pTargetCoords[1], nMask, expandedRadius,
+                    static_cast<unsigned long long>(count));
+                NotifyLog(msg);
             }
             return resultRoom;
         }
     }
 
-    // Step 3: ATTEMPT B - Fallback to origin coordinates (or player position)
+    // Step 3: ATTEMPT B - Fallback to origin coordinates (player or monster kill position)
     if (g_config.fallbackToPlayer && pOriginCoords != nullptr && pRoom != 0) {
-        // Snap target coordinates to origin coords (where the killer or monster was)
+        // Snap target coordinates to origin coords
         pTargetCoords[0] = pOriginCoords[0];
         pTargetCoords[1] = pOriginCoords[1];
 
@@ -217,20 +222,28 @@ static int64_t __fastcall HookCOLLISION_GetFreeCoordinates(
         );
 
         if (resultRoom != 0) {
-            g_recoveredDropsCount.fetch_add(1, std::memory_order_relaxed);
-            if (g_config.logRecoveries && g_context != nullptr) {
-                char msg[128];
+            const auto count = g_recoveredDropsCount.fetch_add(1, std::memory_order_relaxed) + 1;
+            if (g_config.logRecoveries) {
+                char msg[256];
                 std::snprintf(msg, sizeof(msg),
-                    "[VoidDropFix] Recovered drop to origin coords at (%d, %d). Total recovered: %llu",
-                    pTargetCoords[0], pTargetCoords[1],
-                    static_cast<unsigned long long>(g_recoveredDropsCount.load()));
-                g_context->LogInfo(msg);
+                    "[VoidDropFix] Loot recovered to origin/killer position at (%d, %d) [mask=0x%X]. Total recovered: %llu",
+                    pTargetCoords[0], pTargetCoords[1], nMask,
+                    static_cast<unsigned long long>(count));
+                NotifyLog(msg);
             }
             return resultRoom;
         }
 
-        // Final guarantee: return the original room so D2GAME_DropItem does not abort
-        g_recoveredDropsCount.fetch_add(1, std::memory_order_relaxed);
+        // Final safety net: return the room handle so the calling drop function does not abort
+        const auto count = g_recoveredDropsCount.fetch_add(1, std::memory_order_relaxed) + 1;
+        if (g_config.logRecoveries) {
+            char msg[256];
+            std::snprintf(msg, sizeof(msg),
+                "[VoidDropFix] Loot forced to origin room at (%d, %d). Total recovered: %llu",
+                pTargetCoords[0], pTargetCoords[1],
+                static_cast<unsigned long long>(count));
+            NotifyLog(msg);
+        }
         return pRoom;
     }
 
@@ -252,12 +265,22 @@ static auto VoidDropFixCommand(
         return D2RL::ConsoleCommandResult::Failed;
     }
 
-    char buffer[256];
+    char buffer[384];
     std::snprintf(buffer, sizeof(buffer),
-        "[VoidDropFix] Status: %s | Total Drops Recovered: %llu | Wider Radius: %d (Credits: Dimentio, D2MOO)",
+        "=== [D2R Void Drop Fix v1.0.1] ===\n"
+        "  Hook Status:   %s\n"
+        "  Plugin State:  %s\n"
+        "  Total Calls:   %llu\n"
+        "  Recovered:     %llu drops\n"
+        "  Search Radius: %d tiles\n"
+        "  Origin Fallback: %s\n"
+        "  Credits: Dimentio (D2RLoader), D2MOO",
+        g_originalGetFreeCoords != nullptr ? "ACTIVE (Hooked)" : "FAILED TO HOOK",
         g_config.enabled ? "ENABLED" : "DISABLED",
+        static_cast<unsigned long long>(g_totalCallsCount.load()),
         static_cast<unsigned long long>(g_recoveredDropsCount.load()),
-        g_config.widerSearchRadius
+        g_config.widerSearchRadius,
+        g_config.fallbackToPlayer ? "YES" : "NO"
     );
     cmd->plugin->WriteConsoleMessage(buffer);
 
@@ -313,7 +336,7 @@ D2RL_PLUGIN_EXPORT auto D2RLoaderLoadPlugin(const D2RL::PluginContext* context) 
         return false;
     }
 
-    context->LogInfo("[VoidDropFix] D2R Void Drop Fix Plugin v1.0.0 successfully initialized.");
+    context->LogInfo("[VoidDropFix] D2R Void Drop Fix Plugin v1.0.1 successfully initialized.");
     return true;
 }
 
