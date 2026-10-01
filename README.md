@@ -6,7 +6,7 @@ A native C++20 plugin for **Diablo II: Resurrected** built using the official **
 
 ## 🎯 What Problem Does This Solve?
 
-In vanilla Diablo II and D2R, when monsters with floating or flying animations (Ghosts, Wraiths, Finger Mages, Willowisps) are killed while floating over the abyss or void (such as the **Arcane Sanctuary**, **River of Flame**, or **Chaos Sanctuary**):
+In vanilla Diablo II and D2R, when monsters with floating or flying animations are killed while floating over the abyss or void (such as the **Arcane Sanctuary**, **River of Flame**, or **Chaos Sanctuary**):
 
 1. The game checks for valid ground within a small search radius (2–3 tiles) via `COLLISION_GetFreeCoordinates`.
 2. Because every tile in that radius is flagged with collision mask `0x801` (abyss / unwalkable void), the function returns `0` (`nullptr`).
