@@ -66,8 +66,8 @@ Outputs `d2rl-void-drop-fix.dll`. Copy it to your `d2rloader/plugins/` directory
 
 ## 🎖️ Acknowledgements & Credits
 
-* **Dimentio**: Creator of **D2RLoader**, and the **D2RLoader Plugin SDK**, making modern native C++ modding possible for Diablo II: Resurrected.
-* **The D2MOO Project**: For their monumental research and reverse engineering of the Diablo II game engine, collision masks, and `COLLISION_GetFreeCoordinates` algorithms.
+* **Dimentio**: Creator of **[D2RLoader](https://d2rloader.net/)**, and the **[D2RLoader PluginSDK](https://github.com/D2RLoader/PluginSDK)**, making modern native C++ modding possible for Diablo II: Resurrected. https://d2rloader.net/
+* **[The D2MOO Project](https://github.com/ThePhrozenKeep/D2MOO)**: For their monumental research and reverse engineering of the Diablo II game engine, collision masks, and `COLLISION_GetFreeCoordinates` algorithms.
 * **Blizzard Entertainment**: Creators of *Diablo II: Resurrected*. (This project is an unofficial open-source mod and is not affiliated with, endorsed by, or sponsored by Blizzard Entertainment.)
 
 ---
