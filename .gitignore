@@ -26,3 +26,4 @@ Makefile
 *.pdb
 *.ilk
 *.obj
+RC*
