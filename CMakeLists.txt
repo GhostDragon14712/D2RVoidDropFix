@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.29)
-project(D2RVoidDropFix VERSION 1.0.0 LANGUAGES CXX RC)
+project(D2RVoidDropFix VERSION 1.0.1 LANGUAGES CXX RC)
 
 include(FetchContent)
+
+# ------------------------------------------------------------------------------
+# Disable SDK unit tests & examples to keep your builds lightning-fast
+# ------------------------------------------------------------------------------
+set(BUILD_TESTING OFF CACHE BOOL "Disable CTest test targets" FORCE)
+set(D2RLPLUGIN_BUILD_EXAMPLES OFF CACHE BOOL "Disable SDK sample plugins" FORCE)
 
 # ------------------------------------------------------------------------------
 # 1. Check for a local copy first (fast & offline)
@@ -21,7 +27,6 @@ set(FOUND_LOCAL_SDK FALSE)
 foreach(candidate IN LISTS LOCAL_SDK_CANDIDATES)
     if(candidate AND EXISTS "${candidate}/CMakeLists.txt")
         message(STATUS "Found local D2RLoader Plugin SDK: ${candidate}")
-        set(D2RLPLUGIN_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         add_subdirectory("${candidate}" "${CMAKE_BINARY_DIR}/D2RLoader-PluginSDK")
         set(FOUND_LOCAL_SDK TRUE)
         break()
@@ -34,8 +39,6 @@ endforeach()
 if(NOT FOUND_LOCAL_SDK)
     message(STATUS "Local SDK not found; downloading from https://github.com/D2RLoader/PluginSDK.git...")
     
-    set(D2RLPLUGIN_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
     FetchContent_Declare(
         D2RLoaderPluginSDK
         GIT_REPOSITORY https://github.com/D2RLoader/PluginSDK.git
@@ -68,7 +71,7 @@ set_target_properties(D2RVoidDropFix PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/release/d2rloader/plugins"
 )
 
-# Embed default TOML config into the DLL resource using SDK helper
+# Embed default TOML config into the DLL resource using the SDK helper
 if(COMMAND d2rlplugin_embed_config)
     d2rlplugin_embed_config(
         TARGET D2RVoidDropFix
