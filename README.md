@@ -68,7 +68,7 @@ Outputs `d2rl-void-drop-fix.dll`. Copy it to your `d2rloader/plugins/` directory
 
 * **Dimentio**: Creator of **D2RLoader**, and the **D2RLoader Plugin SDK**, making modern native C++ modding possible for Diablo II: Resurrected.
 * **The D2MOO Project**: For their monumental research and reverse engineering of the Diablo II game engine, collision masks, and `COLLISION_GetFreeCoordinates` algorithms.
-* **Blizzard Entertainment: Creators of Diablo II: Resurrected. (This project is an unofficial open-source mod and is not affiliated with, endorsed by, or sponsored by Blizzard Entertainment.)
+* **Blizzard Entertainment**: Creators of *Diablo II: Resurrected*. (This project is an unofficial open-source mod and is not affiliated with, endorsed by, or sponsored by Blizzard Entertainment.)
 
 ---
 
