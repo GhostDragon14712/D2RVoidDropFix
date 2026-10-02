@@ -8,7 +8,7 @@ A native C++20 plugin for **Diablo II: Resurrected** built using the official **
 
 In vanilla Diablo II and D2R, when monsters with floating or flying animations are killed while floating over the abyss or void (such as the **Arcane Sanctuary**, **River of Flame**, or **Chaos Sanctuary**):
 
-1. The game checks for valid ground within a small search radius (2–3 tiles) via `COLLISION_GetFreeCoordinates`.
+1. The game checks for valid ground within a small search radius via `COLLISION_GetFreeCoordinates`.
 2. Because every tile in that radius is flagged with collision mask `0x801` (abyss / unwalkable void), the function returns `0` (`nullptr`).
 3. The drop function aborts:
    ```c
@@ -23,8 +23,7 @@ In vanilla Diablo II and D2R, when monsters with floating or flying animations a
 This plugin cleanly detours `COLLISION_GetFreeCoordinates` (`RVA: 0x00364E90`) through D2RLoader's tracked inline hook system:
 
 1. **Zero Impact on Normal Gameplay:** When monsters die on valid ground, the vanilla function succeeds immediately with zero alteration.
-2. **Nearest Ledge Search:** If the drop is over the void, it expands the search radius up to 24 tiles to safely drop the loot onto the nearest walkway or ledge in the Arcane Sanctuary.
-3. **Player / Origin Fallback:** If the monster was killed deep over open space with no walkable tile anywhere nearby, the drop snaps safely to the origin/killer coordinates, ensuring no loot is ever lost.
+2. **Nearest Ledge Search:** If the drop is over the void, it expands the search radius up to 64 tiles to safely drop the loot onto the nearest walkway or ledge in the Arcane Sanctuary.
 
 ---
 
@@ -32,11 +31,14 @@ This plugin cleanly detours `COLLISION_GetFreeCoordinates` (`RVA: 0x00364E90`) t
 
 ```toml
 [general]
+# Master switch for the void drop protection hook
 enabled = true
-log_recoveries = true
-search_wider_radius_first = true
-wider_search_radius = 24
-fallback_to_player = true
+
+# Whether to log recovery details (default: false)
+log_recoveries = false
+
+# Search radius (in tiles) to find the nearest valid walkable ground/ledge
+search_radius = 64
 ```
 
 ---
@@ -60,7 +62,7 @@ cmake .. -A x64
 cmake --build . --config Release
 ```
 
-Outputs `d2rl-void-drop-fix.dll`. Copy it to your `d2rloader/plugins/` directory.
+Outputs `d2rl-voiddropfix.dll` to build/Release. Copy it to your `d2rloader/plugins/` directory.
 
 ---
 

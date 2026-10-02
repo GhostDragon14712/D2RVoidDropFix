@@ -5,10 +5,9 @@
 # Master switch for the void drop protection hook.
 enabled = true
 
-# Log recoveries to the D2RLoader console and log file when an item is saved from the void.
+# Whether to log recovery details to the loader log (default: false).
 log_recoveries = false
 
 # Search radius (in tiles) used to find the nearest valid walkable ground/ledge.
-# Default is 64 tiles (covers over two full screens of distance, guaranteeing
-# that any monster dying out in the void will find a nearby walkway/platform).
+# Default is 64 tiles (guarantees finding a walkway/platform even deep in Arcane Sanctuary).
 search_radius = 64

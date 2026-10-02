@@ -30,6 +30,7 @@ static constexpr D2RL::PluginInfo kPluginInfo{
 // ============================================================================
 struct Config {
     bool enabled         = true;
+    bool logRecoveries   = false;
     int32_t searchRadius = 64; // Generous search radius (in tiles) to guarantee finding valid ground
 };
 
@@ -89,6 +90,7 @@ static constexpr const char* kDefaultConfigToml =
     "# Prevents items, runes, and gold from vanishing when monsters die over void/abyss tiles.\n\n"
     "[general]\n"
     "enabled = true\n"
+    "log_recoveries = false\n"
     "search_radius = 64\n";
 
 static std::string Trim(std::string_view sv) {
@@ -133,6 +135,8 @@ static void LoadConfiguration(const D2RL::PluginContext* context) {
 
                 if (key == "enabled") {
                     g_config.enabled = (val == "true" || val == "1");
+                } else if (key == "log_recoveries" || key == "logging") {
+                    g_config.logRecoveries = (val == "true" || val == "1");
                 } else if (key == "search_radius" || key == "wider_search_radius") {
                     try {
                         g_config.searchRadius = std::clamp(std::stoi(val), 8, 256);
@@ -214,6 +218,12 @@ static int64_t __fastcall HookCOLLISION_GetFreeCoordinates(
 
                 int32_t currentMax = g_maxDistanceSeen.load(std::memory_order_relaxed);
                 while (dist > currentMax && !g_maxDistanceSeen.compare_exchange_weak(currentMax, dist, std::memory_order_relaxed)) {}
+
+                if (g_config.logRecoveries && g_context) {
+                    char logBuf[128];
+                    std::snprintf(logBuf, sizeof(logBuf), "[VoidDropFix] Rescued void drop to ledge (distance moved: %d tiles)", dist);
+                    g_context->WriteConsoleMessage(logBuf);
+                }
             }
             return resultRoom;
         }
@@ -239,8 +249,9 @@ static auto VoidDropFixCommand(
 
     char buffer[256];
     std::snprintf(buffer, sizeof(buffer),
-        "[VoidDropFix] Status: %s | Search Radius: %d tiles",
+        "[VoidDropFix] Status: %s | Logging: %s | Search Radius: %d tiles",
         g_config.enabled ? "ENABLED" : "DISABLED",
+        g_config.logRecoveries ? "ENABLED" : "DISABLED",
         g_config.searchRadius
     );
     cmd->plugin->WriteConsoleMessage(buffer);
