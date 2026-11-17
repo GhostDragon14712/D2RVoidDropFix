@@ -1,1 +1,0 @@
-C:/Users/matt7/source/repos/d2r-test-harness/skills/d2r-harness/SKILL.md

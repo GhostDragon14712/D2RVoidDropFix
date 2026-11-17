@@ -27,3 +27,8 @@ Makefile
 *.ilk
 *.obj
 RC*
+
+# machine-local: links into the harness checkout, and its generated brief sidecar
+.claude/
+.githooks
+.harness-brief
