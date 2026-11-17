@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.29)
-project(D2RVoidDropFix VERSION 1.0.0 LANGUAGES CXX RC)
+project(D2RVoidDropFix VERSION 6.0.0 LANGUAGES CXX RC)
 
 include(FetchContent)
 
@@ -31,4 +31,13 @@ set_target_properties(D2RVoidDropFix PROPERTIES
 d2rlplugin_embed_config(
     TARGET D2RVoidDropFix
     FILE "${CMAKE_CURRENT_SOURCE_DIR}/void-drop-fix.toml"
+)
+
+# Auto-copy DLL to D2RLoader plugins folder after build
+add_custom_command(TARGET D2RVoidDropFix POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "C:/Program Files (x86)/D2RLoader/d2rloader/plugins"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:D2RVoidDropFix>
+        "C:/Program Files (x86)/D2RLoader/d2rloader/plugins/d2rl-voiddropfix.dll"
+    COMMENT "Copying d2rl-voiddropfix.dll to D2RLoader plugins folder..."
 )

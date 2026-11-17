@@ -11,3 +11,5 @@ Disregard. I hadn't realized this had already been fixed by dimentio in a previo
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+
+Third-party notices, including the D2RLoader PluginSDK's MIT text, are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
